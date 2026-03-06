@@ -264,7 +264,7 @@ export default function HomePage() {
         </div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl p-5 shadow-sm">
             <p className="text-sm text-gray-500">Total Member</p>
             <p className="text-3xl font-bold">{stats.totalMembers}</p>
@@ -274,6 +274,20 @@ export default function HomePage() {
             <p className="text-sm text-gray-500">Hadir (Event Aktif)</p>
             <p className="text-3xl font-bold">{stats.hadirHariIni}</p>
           </div>
+          <div className="bg-white rounded-2xl p-5 shadow-sm">
+  <p className="text-sm text-gray-500">Jadwal Event Aktif</p>
+  <p className="text-lg font-bold">
+    {stats.activeEvent
+      ? new Date(stats.activeEvent.event_date).toLocaleString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "-"}
+  </p>
+</div>
         </div>
 
         {/* Check-in */}
