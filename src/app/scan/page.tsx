@@ -4,7 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 
 const Scanner = dynamic(
-  () => import("../../../components/qr/QrScannerModal"),
+  () => import("../../components/qr/QrScannerModal"),
   { ssr: false }
 );
 
