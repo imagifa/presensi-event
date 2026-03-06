@@ -102,33 +102,33 @@ export default function AdminEventsPage() {
     }
   }
 
-  async function activateEvent(eventId: string) {
-    setMessage("");
+async function activateEvent(eventId: string) {
+  setMessage("");
 
-    try {
-      const res = await fetch(`/api/admin/events/activate?pin=${pin}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          event_id: eventId,
-        }),
-      });
+  try {
+    const res = await fetch(`/api/admin/events/activate?pin=${pin}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        event_id: eventId,
+      }),
+    });
 
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Gagal mengaktifkan event");
-      }
-
-      setMessage(`Event "${data.event.title}" berhasil diaktifkan`);
-      loadEvents(pin);
-    } catch (err: any) {
-      setMessage(err.message || "Terjadi kesalahan");
+    if (!res.ok) {
+      throw new Error(data?.error || "Gagal mengaktifkan event");
     }
+
+    setMessage(`Event "${data.event.title}" berhasil diaktifkan`);
+    loadEvents(pin);
+  } catch (err: any) {
+    setMessage(err.message || "Terjadi kesalahan");
   }
+}
 
   return (
     <main className="min-h-screen bg-gray-50">
