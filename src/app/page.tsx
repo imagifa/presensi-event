@@ -457,43 +457,48 @@ export default function HomePage() {
       <button
         type="button"
         onClick={() => {
-          // Print page sederhana
-          const w = window.open("", "_blank");
-          if (!w) return;
+  const member = regResult?.member;
+  const qrDataUrl = regResult?.qrDataUrl;
 
-          const html = `
-            <html>
-              <head>
-                <title>Kartu Member</title>
-                <style>
-                  body { font-family: Arial; padding: 24px; }
-                  .card { border: 1px solid #ddd; border-radius: 16px; padding: 16px; width: 320px; }
-                  img { width: 220px; height: 220px; display: block; margin: 0 auto 12px; }
-                  .name { font-size: 18px; font-weight: 700; text-align: center; margin: 6px 0; }
-                  .sub { font-size: 13px; color: #555; text-align: center; margin: 2px 0; }
-                  .id { font-family: monospace; font-weight: 700; text-align: center; margin-top: 8px; }
-                  .hint { font-size: 12px; color: #777; text-align: center; margin-top: 12px; }
-                  @media print { body { padding: 0; } .card { border: none; } }
-                </style>
-              </head>
-              <body>
-                <div class="card">
-                  <img src="${regResult.qrDataUrl}" />
-                  <div class="name">${regResult.member.name}</div>
-                  <div class="sub">${regResult.member.phone}</div>
-                  <div class="id">${regResult.member.id}</div>
-                  <div class="hint">Tunjukkan QR ini saat check-in kajian.</div>
-                </div>
-                <script>
-                  window.onload = () => window.print();
-                </script>
-              </body>
-            </html>
-          `;
-          w.document.open();
-          w.document.write(html);
-          w.document.close();
-        }}
+  if (!member || !qrDataUrl) return;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+
+  const html = `
+    <html>
+      <head>
+        <title>Kartu Member</title>
+        <style>
+          body { font-family: Arial; padding: 24px; }
+          .card { border: 1px solid #ddd; border-radius: 16px; padding: 16px; width: 320px; }
+          img { width: 220px; height: 220px; display: block; margin: 0 auto 12px; }
+          .name { font-size: 18px; font-weight: 700; text-align: center; margin: 6px 0; }
+          .sub { font-size: 13px; color: #555; text-align: center; margin: 2px 0; }
+          .id { font-family: monospace; font-weight: 700; text-align: center; margin-top: 8px; }
+          .hint { font-size: 12px; color: #777; text-align: center; margin-top: 12px; }
+          @media print { body { padding: 0; } .card { border: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <img src="${qrDataUrl}" />
+          <div class="name">${member.name}</div>
+          <div class="sub">${member.phone}</div>
+          <div class="id">${member.id}</div>
+          <div class="hint">Tunjukkan QR ini saat check-in kajian.</div>
+        </div>
+        <script>
+          window.onload = () => window.print();
+        </script>
+      </body>
+    </html>
+  `;
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}}
         className="flex-1 px-4 py-2 rounded-xl border font-semibold hover:bg-gray-50"
       >
         Print
