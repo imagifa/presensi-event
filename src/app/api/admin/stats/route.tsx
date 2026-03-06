@@ -12,11 +12,12 @@ export async function GET(req: Request) {
   const supabase = supabaseService();
 
   // ambil event aktif
-  const { data: activeEvent, error: evErr } = await supabase
-    .from("events")
-    .select("id,title,event_date")
-    .eq("is_active", true)
-    .maybeSingle();
+ const { data: activeEvent, error: eventErr } = await supabase
+  .from("events")
+  .select("id,title,event_date")
+  .eq("is_active", true)
+  .order("event_date", { ascending: false })
+  .maybeSingle();
 
   if (evErr) {
     return NextResponse.json({ error: evErr.message }, { status: 500 });
