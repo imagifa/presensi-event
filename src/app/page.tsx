@@ -238,7 +238,7 @@ export default function HomePage() {
         {/* Header */}
         <div className="flex items-center justify-between bg-white rounded-2xl p-5 shadow-sm">
           <div>
-            <h1 className="text-2xl font-bold">Presensi Kajian</h1>
+            <h1 className="text-2xl font-bold">Presensi Event</h1>
             <p className="text-sm text-gray-500">
   Event aktif:{" "}
   {stats.activeEvent
