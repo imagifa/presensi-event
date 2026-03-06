@@ -240,8 +240,19 @@ export default function HomePage() {
           <div>
             <h1 className="text-2xl font-bold">Presensi Kajian</h1>
             <p className="text-sm text-gray-500">
-              Event aktif: {stats.activeEvent?.title ?? "-"}
-            </p>
+  Event aktif:{" "}
+  {stats.activeEvent
+    ? `${stats.activeEvent.title} • ${new Date(
+        stats.activeEvent.event_date
+      ).toLocaleString("id-ID", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : "-"}
+</p>
           </div>
 
           <button
