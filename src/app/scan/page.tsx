@@ -36,7 +36,7 @@ export default function ScanPage() {
       <Scanner
         open={open}
         onClose={() => setOpen(false)}
-        onDetected={handleScan}
+        onResult={handleScan}
       />
     </main>
   );
