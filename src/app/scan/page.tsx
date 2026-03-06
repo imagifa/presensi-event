@@ -3,9 +3,10 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 
-const Scanner = dynamic(() => import("@/components/qr/QrScannerModal"), {
-  ssr: false,
-});
+const Scanner = dynamic(
+  () => import("../../../components/qr/QrScannerModal"),
+  { ssr: false }
+);
 
 export default function ScanPage() {
   const [open, setOpen] = useState(true);
