@@ -355,7 +355,7 @@ export default function HomePage() {
 
         {/* Register */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
-          <h2 className="text-lg font-bold">Daftar Jamaah Baru</h2>
+          <h2 className="text-lg font-bold">Daftar Peserta Baru</h2>
 
           <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
