@@ -124,7 +124,7 @@ async function activateEvent(eventId: string) {
     }
 
     setMessage(`Event "${data.event.title}" berhasil diaktifkan`);
-    loadEvents(pin);
+    setTimeout(() => loadEvents(pin), 200);
   } catch (err: any) {
     setMessage(err.message || "Terjadi kesalahan");
   }
