@@ -137,6 +137,12 @@ export default function AdminPage() {
   >
     Data Member
   </a>
+<a
+  className="px-4 py-3 rounded-xl border font-semibold hover:bg-gray-50 text-center"
+  href="/admin/events"
+>
+  Kelola Event
+</a>            
 </div>
           <p className="text-xs text-gray-500 mt-3">
             Nanti kita rapikan jadi tombol “Download Excel” yang lebih proper.
