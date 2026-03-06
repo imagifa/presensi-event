@@ -91,7 +91,11 @@ export default function HomePage() {
       })
       .catch((e) => console.error("active-events error:", e));
   }, []);
-
+useEffect(() => {
+  if (stats.activeEvent?.id) {
+    setEventId(stats.activeEvent.id);
+  }
+}, [stats.activeEvent]);
   async function handleAdminLogin() {
     const res = await fetch(`/api/admin/stats?pin=${adminPin}`, { cache: "no-store" });
     if (!res.ok) {
@@ -131,12 +135,12 @@ export default function HomePage() {
 
     if (data?.ok) {
       setManualId("");
-      setResult({
-        ok: true,
-        name: data.member?.name,
-        phone: data.member?.phone,
-        time: data.check_in_at,
-      });
+    setResult({
+  ok: true,
+  name: `${data.member?.name} • ${data.event?.title ?? "Event aktif"}`,
+  phone: data.member?.phone,
+  time: data.check_in_at,
+});
 
       // refresh stats cepat setelah check-in
       fetch("/api/admin/stats?pin=123456", { cache: "no-store" })
@@ -289,19 +293,26 @@ export default function HomePage() {
   </p>
 </div>
         </div>
-
+{!stats.activeEvent && (
+  <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4">
+    <p className="font-semibold">Belum ada event aktif</p>
+    <p className="text-sm mt-1">
+      Presensi dikunci sampai admin mengaktifkan event dari dashboard admin.
+    </p>
+  </div>
+)}
         {/* Check-in */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold">Check-in</h2>
 
-            <button
-              onClick={() => setScanOpen(true)}
-              disabled={!eventId}
-              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold disabled:opacity-50"
-            >
-              Scan QR (Kamera)
-            </button>
+           <button
+  onClick={() => setScanOpen(true)}
+  disabled={!stats.activeEvent || !eventId}
+  className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold disabled:opacity-50"
+>
+  Scan QR (Kamera)
+</button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -331,11 +342,12 @@ export default function HomePage() {
                   className="flex-1 border rounded-xl px-3 py-2"
                 />
                 <button
-                  onClick={() => doCheckin(manualId, "manual")}
-                  className="px-4 py-2 rounded-xl border font-semibold hover:bg-gray-50"
-                >
-                  Check-in
-                </button>
+  onClick={() => doCheckin(manualId, "manual")}
+  disabled={!stats.activeEvent || !eventId}
+  className="px-4 py-2 rounded-xl border font-semibold hover:bg-gray-50 disabled:opacity-50"
+>
+  Check-in
+</button>
               </div>
 
               <p className="text-xs text-gray-400 mt-2">
