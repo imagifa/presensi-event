@@ -14,23 +14,26 @@
     "@supabase/supabase-js": "^2.98.0",
     "jsqr": "^1.4.0",
     "nanoid": "^5.1.6",
-    "next": "16.1.6",
+    "next": "15.2.0",
     "qrcode": "^1.5.4",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@types/qrcode": "^1.5.5",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
     "autoprefixer": "^10.4.27",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "15.2.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": "20.x"
   }
 }
