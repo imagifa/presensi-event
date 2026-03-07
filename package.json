@@ -2,24 +2,31 @@
   "name": "presensi-kajian-v2",
   "version": "0.1.0",
   "private": true,
+
+  "engines": {
+    "node": "20.x"
+  },
+
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
+
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
     "@yudiel/react-qr-scanner": "^2.0.0",
     "jsqr": "^1.4.0",
     "nanoid": "^5.1.6",
-    "next": "15.5.7",
+    "next": "15.5.9",
     "qrcode": "^1.5.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "xlsx": "^0.18.5"
   },
+
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^20",
@@ -28,12 +35,9 @@
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.27",
     "eslint": "^9",
-    "eslint-config-next": "15.5.7",
+    "eslint-config-next": "15.5.9",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",
     "typescript": "^5"
-  },
-  "engines": {
-    "node": "20.x"
   }
 }
