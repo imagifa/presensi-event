@@ -590,14 +590,13 @@ export default function HomePage() {
         </div>
       )}
 
-      <QrScannerModal
-        open={scanOpen}
-        onClose={() => setScanOpen(false)}
-        onResult={(text) => {
-          setScanOpen(false);
-          doCheckin(text, "scan");
-        }}
-      />
+   <QrScannerModal
+  open={scanOpen}
+  onClose={() => setScanOpen(false)}
+  onResult={(text) => {
+    doCheckin(text, "scan");
+  }}
+/>
     </main>
   );
 }
