@@ -32,76 +32,89 @@ type RegisterResult =
     };
 
 export default function HomePage() {
-  // ====== TOP STATS ======
   const [stats, setStats] = useState<Stats>({
     totalMembers: 0,
     hadirHariIni: 0,
     activeEvent: null,
   });
 
-  // ====== ADMIN MODAL (PIN) ======
   const [showAdmin, setShowAdmin] = useState(false);
   const [adminPin, setAdminPin] = useState("");
 
-  // ====== CHECK-IN ======
   const [events, setEvents] = useState<ActiveEvent[]>([]);
   const [eventId, setEventId] = useState("");
   const [manualId, setManualId] = useState("");
   const [scanOpen, setScanOpen] = useState(false);
   const [result, setResult] = useState<CheckinResult>(null);
 
-  // ====== REGISTER ======
   const [regName, setRegName] = useState("");
   const [regPhone, setRegPhone] = useState("");
   const [regLoading, setRegLoading] = useState(false);
   const [regResult, setRegResult] = useState<RegisterResult>(null);
 
-  // ====== STATS: load + polling ======
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const r = await fetch("/api/admin/stats?pin=123456", { cache: "no-store" });
-        const text = await r.text();
-        if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
-        const d = JSON.parse(text);
+  async function loadStats() {
+    try {
+      const r = await fetch("/api/public/home-stats", { cache: "no-store" });
+      const text = await r.text();
+      if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
+      const d = JSON.parse(text);
 
-        setStats({
-          totalMembers: d.totalMembers ?? 0,
-          hadirHariIni: d.hadirHariIni ?? 0,
-          activeEvent: d.activeEvent ?? null,
-        });
-      } catch (e) {
-        console.error("Stats error:", e);
-      }
+      setStats({
+        totalMembers: d.totalMembers ?? 0,
+        hadirHariIni: d.hadirHariIni ?? 0,
+        activeEvent: d.activeEvent ?? null,
+      });
+    } catch (e) {
+      console.error("Stats error:", e);
     }
+  }
 
+  async function loadActiveEvents() {
+    try {
+      const r = await fetch("/api/public/active-events", { cache: "no-store" });
+      const text = await r.text();
+      if (!r.ok) throw new Error(text || `HTTP ${r.status}`);
+      const d = JSON.parse(text);
+
+      const ev: ActiveEvent[] = d.events ?? [];
+      setEvents(ev);
+
+      if (ev.length) {
+        setEventId(ev[0].id);
+      } else {
+        setEventId("");
+      }
+    } catch (e) {
+      console.error("active-events error:", e);
+    }
+  }
+
+  useEffect(() => {
     loadStats();
     const interval = setInterval(loadStats, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // ====== LOAD ACTIVE EVENTS ======
   useEffect(() => {
-    fetch("/api/public/active-events", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => {
-        const ev: ActiveEvent[] = d.events ?? [];
-        setEvents(ev);
-        if (ev.length) setEventId(ev[0].id);
-      })
-      .catch((e) => console.error("active-events error:", e));
+    loadActiveEvents();
   }, []);
-useEffect(() => {
-  if (stats.activeEvent?.id) {
-    setEventId(stats.activeEvent.id);
-  }
-}, [stats.activeEvent]);
+
+  useEffect(() => {
+    if (stats.activeEvent?.id) {
+      setEventId(stats.activeEvent.id);
+    }
+  }, [stats.activeEvent]);
+
   async function handleAdminLogin() {
-    const res = await fetch(`/api/admin/stats?pin=${adminPin}`, { cache: "no-store" });
+    const res = await fetch(`/api/admin/stats?pin=${adminPin}`, {
+      cache: "no-store",
+    });
+
     if (!res.ok) {
       alert("PIN salah atau server error.");
       return;
     }
+
     localStorage.setItem("admin_pin", adminPin);
     window.location.href = "/admin";
   }
@@ -114,8 +127,12 @@ useEffect(() => {
       setResult({ ok: false, error: "Member ID kosong. Isi dulu." });
       return;
     }
-    if (!eventId) {
-      setResult({ ok: false, error: "Event aktif belum tersedia." });
+
+    if (!stats.activeEvent || !eventId) {
+      setResult({
+        ok: false,
+        error: "Tidak ada event aktif. Hubungi admin untuk mengaktifkan event.",
+      });
       return;
     }
 
@@ -135,24 +152,15 @@ useEffect(() => {
 
     if (data?.ok) {
       setManualId("");
-    setResult({
-  ok: true,
-  name: `${data.member?.name} • ${data.event?.title ?? "Event aktif"}`,
-  phone: data.member?.phone,
-  time: data.check_in_at,
-});
+      setResult({
+        ok: true,
+        name: `${data.member?.name} • ${data.event?.title ?? "Event aktif"}`,
+        phone: data.member?.phone,
+        time: data.check_in_at,
+      });
 
-      // refresh stats cepat setelah check-in
-      fetch("/api/admin/stats?pin=123456", { cache: "no-store" })
-        .then((r) => r.json())
-        .then((d) => {
-          setStats({
-            totalMembers: d.totalMembers ?? 0,
-            hadirHariIni: d.hadirHariIni ?? 0,
-            activeEvent: d.activeEvent ?? null,
-          });
-        })
-        .catch(() => {});
+      await loadStats();
+      await loadActiveEvents();
     } else {
       setResult({
         ok: false,
@@ -175,6 +183,7 @@ useEffect(() => {
       setRegResult({ ok: false, error: "Nama wajib diisi" });
       return;
     }
+
     if (!phone) {
       setRegResult({ ok: false, error: "No HP wajib diisi" });
       return;
@@ -197,7 +206,6 @@ useEffect(() => {
       }
 
       if (!data?.ok) {
-        // duplikat no hp → server balikin member juga
         setRegResult({
           ok: false,
           error: data?.error || "Gagal daftar",
@@ -208,7 +216,6 @@ useEffect(() => {
 
       const member = data.member as { id: string; name: string; phone: string };
 
-      // Generate QR data URL (offline, no external API)
       const qrDataUrl = await QRCode.toDataURL(member.id, {
         margin: 1,
         width: 220,
@@ -218,17 +225,8 @@ useEffect(() => {
       setRegName("");
       setRegPhone("");
 
-      // refresh stats setelah daftar
-      fetch("/api/admin/stats?pin=123456", { cache: "no-store" })
-        .then((r) => r.json())
-        .then((d) => {
-          setStats({
-            totalMembers: d.totalMembers ?? 0,
-            hadirHariIni: d.hadirHariIni ?? 0,
-            activeEvent: d.activeEvent ?? null,
-          });
-        })
-        .catch(() => {});
+      await loadStats();
+      await loadActiveEvents();
     } catch (err: any) {
       setRegResult({ ok: false, error: err?.message || "Server error" });
     } finally {
@@ -239,24 +237,23 @@ useEffect(() => {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-3xl mx-auto p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between bg-white rounded-2xl p-5 shadow-sm">
           <div>
             <h1 className="text-2xl font-bold">Presensi Event</h1>
             <p className="text-sm text-gray-500">
-  Event aktif:{" "}
-  {stats.activeEvent
-    ? `${stats.activeEvent.title} • ${new Date(
-        stats.activeEvent.event_date
-      ).toLocaleString("id-ID", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`
-    : "-"}
-</p>
+              Event aktif:{" "}
+              {stats.activeEvent
+                ? `${stats.activeEvent.title} • ${new Date(
+                    stats.activeEvent.event_date
+                  ).toLocaleString("id-ID", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}`
+                : "-"}
+            </p>
           </div>
 
           <button
@@ -267,7 +264,6 @@ useEffect(() => {
           </button>
         </div>
 
-        {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-2xl p-5 shadow-sm">
             <p className="text-sm text-gray-500">Total Member</p>
@@ -278,58 +274,55 @@ useEffect(() => {
             <p className="text-sm text-gray-500">Hadir (Event Aktif)</p>
             <p className="text-3xl font-bold">{stats.hadirHariIni}</p>
           </div>
+
           <div className="bg-white rounded-2xl p-5 shadow-sm">
-  <p className="text-sm text-gray-500">Jadwal Event Aktif</p>
-  <p className="text-lg font-bold">
-    {stats.activeEvent
-      ? new Date(stats.activeEvent.event_date).toLocaleString("id-ID", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "-"}
-  </p>
-</div>
+            <p className="text-sm text-gray-500">Jadwal Event Aktif</p>
+            <p className="text-lg font-bold">
+              {stats.activeEvent
+                ? new Date(stats.activeEvent.event_date).toLocaleString("id-ID", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "-"}
+            </p>
+          </div>
         </div>
-{!stats.activeEvent && (
-  <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4">
-    <p className="font-semibold">Belum ada event aktif</p>
-    <p className="text-sm mt-1">
-      Presensi dikunci sampai admin mengaktifkan event dari dashboard admin.
-    </p>
-  </div>
-)}
-        {/* Check-in */}
+
+        {!stats.activeEvent && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4">
+            <p className="font-semibold">Belum ada event aktif</p>
+            <p className="text-sm mt-1">
+              Presensi dikunci sampai admin mengaktifkan event dari dashboard admin.
+            </p>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold">Check-in</h2>
 
-           <button
-  onClick={() => setScanOpen(true)}
-  disabled={!stats.activeEvent || !eventId}
-  className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold disabled:opacity-50"
->
-  Scan QR (Kamera)
-</button>
+            <button
+              onClick={() => setScanOpen(true)}
+              disabled={!stats.activeEvent || !eventId}
+              className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold disabled:opacity-50"
+            >
+              Scan QR (Kamera)
+            </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <p className="text-sm text-gray-500 mb-1">Event aktif</p>
-              <select
-                value={eventId}
-                onChange={(e) => setEventId(e.target.value)}
-                className="w-full border rounded-xl px-3 py-2"
-              >
-                {events.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.title} ({e.event_date})
-                  </option>
-                ))}
-                {!events.length && <option value="">Tidak ada event aktif</option>}
-              </select>
+              <div className="w-full border rounded-xl px-3 py-2 bg-gray-50">
+                {stats.activeEvent
+                  ? `${stats.activeEvent.title} (${new Date(
+                      stats.activeEvent.event_date
+                    ).toLocaleString("id-ID")})`
+                  : "Tidak ada event aktif"}
+              </div>
             </div>
 
             <div>
@@ -342,12 +335,12 @@ useEffect(() => {
                   className="flex-1 border rounded-xl px-3 py-2"
                 />
                 <button
-  onClick={() => doCheckin(manualId, "manual")}
-  disabled={!stats.activeEvent || !eventId}
-  className="px-4 py-2 rounded-xl border font-semibold hover:bg-gray-50 disabled:opacity-50"
->
-  Check-in
-</button>
+                  onClick={() => doCheckin(manualId, "manual")}
+                  disabled={!stats.activeEvent || !eventId}
+                  className="px-4 py-2 rounded-xl border font-semibold hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Check-in
+                </button>
               </div>
 
               <p className="text-xs text-gray-400 mt-2">
@@ -359,7 +352,9 @@ useEffect(() => {
           {result && (
             <div
               className={`rounded-2xl p-4 ${
-                result.ok ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900"
+                result.ok
+                  ? "bg-emerald-50 text-emerald-900"
+                  : "bg-amber-50 text-amber-900"
               }`}
             >
               <p className="font-bold">
@@ -381,7 +376,9 @@ useEffect(() => {
                   <div className="rounded-xl bg-white/60 p-3">
                     <p className="text-xs text-gray-500">Waktu</p>
                     <p className="font-semibold">
-                      {result.time ? new Date(result.time).toLocaleString("id-ID") : "-"}
+                      {result.time
+                        ? new Date(result.time).toLocaleString("id-ID")
+                        : "-"}
                     </p>
                   </div>
                 </div>
@@ -390,7 +387,6 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Register */}
         <div className="bg-white rounded-2xl p-5 shadow-sm space-y-4">
           <h2 className="text-lg font-bold">Daftar Peserta Baru</h2>
 
@@ -437,7 +433,11 @@ useEffect(() => {
           </form>
 
           {regResult && (
-            <div className={`rounded-2xl p-4 ${regResult.ok ? "bg-blue-50" : "bg-amber-50"}`}>
+            <div
+              className={`rounded-2xl p-4 ${
+                regResult.ok ? "bg-blue-50" : "bg-amber-50"
+              }`}
+            >
               <p className="font-bold">
                 {regResult.ok ? "Berhasil daftar ✅" : "Gagal / Duplikat ⚠️"}
               </p>
@@ -460,105 +460,105 @@ useEffect(() => {
                 </div>
               )}
 
-            {regResult.ok && regResult.qrDataUrl && regResult.member && (
-  <div className="mt-4 flex flex-col items-center gap-3">
-    <img
-      src={regResult.qrDataUrl}
-      alt="QR Member"
-      className="rounded-xl border bg-white p-2"
-    />
+              {regResult.ok && regResult.qrDataUrl && regResult.member && (
+                <div className="mt-4 flex flex-col items-center gap-3">
+                  <img
+                    src={regResult.qrDataUrl}
+                    alt="QR Member"
+                    className="rounded-xl border bg-white p-2"
+                  />
 
-    <div className="text-center text-sm">
-      <p className="font-semibold">{regResult.member.name}</p>
-      <p className="text-gray-500">{regResult.member.phone}</p>
-      <p className="font-mono">{regResult.member.id}</p>
-    </div>
+                  <div className="text-center text-sm">
+                    <p className="font-semibold">{regResult.member.name}</p>
+                    <p className="text-gray-500">{regResult.member.phone}</p>
+                    <p className="font-mono">{regResult.member.id}</p>
+                  </div>
 
-    <div className="flex gap-2 w-full max-w-xs">
-      <button
-        type="button"
-        onClick={() => {
-          // Download PNG dari dataURL
-          const a = document.createElement("a");
-          a.href = regResult.qrDataUrl!;
-          a.download = `QR_${regResult.member!.id}.png`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        }}
-        className="flex-1 px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold"
-      >
-        Download QR (PNG)
-      </button>
+                  <div className="flex gap-2 w-full max-w-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const a = document.createElement("a");
+                        a.href = regResult.qrDataUrl!;
+                        a.download = `QR_${regResult.member!.id}.png`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                      }}
+                      className="flex-1 px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold"
+                    >
+                      Download QR (PNG)
+                    </button>
 
-      <button
-        type="button"
-        onClick={() => {
-  const member = regResult?.member;
-  const qrDataUrl = regResult?.qrDataUrl;
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const member = regResult?.member;
+                        const qrDataUrl = regResult?.qrDataUrl;
 
-  if (!member || !qrDataUrl) return;
+                        if (!member || !qrDataUrl) return;
 
-  const w = window.open("", "_blank");
-  if (!w) return;
+                        const w = window.open("", "_blank");
+                        if (!w) return;
 
-  const html = `
-    <html>
-      <head>
-        <title>Kartu Member</title>
-        <style>
-          body { font-family: Arial; padding: 24px; }
-          .card { border: 1px solid #ddd; border-radius: 16px; padding: 16px; width: 320px; }
-          img { width: 220px; height: 220px; display: block; margin: 0 auto 12px; }
-          .name { font-size: 18px; font-weight: 700; text-align: center; margin: 6px 0; }
-          .sub { font-size: 13px; color: #555; text-align: center; margin: 2px 0; }
-          .id { font-family: monospace; font-weight: 700; text-align: center; margin-top: 8px; }
-          .hint { font-size: 12px; color: #777; text-align: center; margin-top: 12px; }
-          @media print { body { padding: 0; } .card { border: none; } }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <img src="${qrDataUrl}" />
-          <div class="name">${member.name}</div>
-          <div class="sub">${member.phone}</div>
-          <div class="id">${member.id}</div>
-          <div class="hint">Tunjukkan QR ini saat check-in kajian.</div>
-        </div>
-        <script>
-          window.onload = () => window.print();
-        </script>
-      </body>
-    </html>
-  `;
+                        const html = `
+                          <html>
+                            <head>
+                              <title>Kartu Member</title>
+                              <style>
+                                body { font-family: Arial; padding: 24px; }
+                                .card { border: 1px solid #ddd; border-radius: 16px; padding: 16px; width: 320px; }
+                                img { width: 220px; height: 220px; display: block; margin: 0 auto 12px; }
+                                .name { font-size: 18px; font-weight: 700; text-align: center; margin: 6px 0; }
+                                .sub { font-size: 13px; color: #555; text-align: center; margin: 2px 0; }
+                                .id { font-family: monospace; font-weight: 700; text-align: center; margin-top: 8px; }
+                                .hint { font-size: 12px; color: #777; text-align: center; margin-top: 12px; }
+                                @media print { body { padding: 0; } .card { border: none; } }
+                              </style>
+                            </head>
+                            <body>
+                              <div class="card">
+                                <img src="${qrDataUrl}" />
+                                <div class="name">${member.name}</div>
+                                <div class="sub">${member.phone}</div>
+                                <div class="id">${member.id}</div>
+                                <div class="hint">Tunjukkan QR ini saat check-in kajian.</div>
+                              </div>
+                              <script>
+                                window.onload = () => window.print();
+                              </script>
+                            </body>
+                          </html>
+                        `;
 
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-}}
-        className="flex-1 px-4 py-2 rounded-xl border font-semibold hover:bg-gray-50"
-      >
-        Print
-      </button>
-    </div>
+                        w.document.open();
+                        w.document.write(html);
+                        w.document.close();
+                      }}
+                      className="flex-1 px-4 py-2 rounded-xl border font-semibold hover:bg-gray-50"
+                    >
+                      Print
+                    </button>
+                  </div>
 
-    <p className="text-xs text-gray-500 text-center">
-      Download untuk disimpan / kirim via WhatsApp. Print untuk kartu fisik.
-    </p>
-  </div>
-)}
+                  <p className="text-xs text-gray-500 text-center">
+                    Download untuk disimpan / kirim via WhatsApp. Print untuk kartu fisik.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Modal Admin (PIN) */}
       {showAdmin && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white w-full max-w-sm rounded-2xl p-6 space-y-4">
             <div>
               <h2 className="text-xl font-bold">Login Admin</h2>
-              <p className="text-sm text-gray-500">Masukkan PIN admin untuk masuk dashboard</p>
+              <p className="text-sm text-gray-500">
+                Masukkan PIN admin untuk masuk dashboard
+              </p>
             </div>
 
             <input
@@ -590,7 +590,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Modal Scanner */}
       <QrScannerModal
         open={scanOpen}
         onClose={() => setScanOpen(false)}
